@@ -746,7 +746,6 @@ contains
      real(r8) :: xs(bounds%begc:bounds%endc)             ! water needed to bring soil moisture to watmin (mm)
      real(r8) :: dzmm(bounds%begc:bounds%endc,1:nlevsoi) ! layer thickness (mm)
      integer  :: jwt(bounds%begc:bounds%endc)            ! index of the soil layer right above the water table (-)
-     real(r8) :: rsub_bot(bounds%begc:bounds%endc)       ! subsurface runoff - bottom drainage (mm/s)
      real(r8) :: rsub_top(bounds%begc:bounds%endc)       ! subsurface runoff - topographic control (mm/s)
      real(r8) :: xsi(bounds%begc:bounds%endc)            ! excess soil water above saturation at layer i (mm)
      real(r8) :: rous                                    ! aquifer yield (-)
@@ -1053,7 +1052,6 @@ contains
      real(r8) :: xs(bounds%begc:bounds%endc)             ! water needed to bring soil moisture to watmin (mm)
      real(r8) :: dzmm(bounds%begc:bounds%endc,1:nlevsoi) ! layer thickness (mm)
      integer  :: jwt(bounds%begc:bounds%endc)            ! index of the soil layer right above the water table (-)
-     real(r8) :: rsub_bot(bounds%begc:bounds%endc)       ! subsurface runoff - bottom drainage (mm/s)
      real(r8) :: rsub_top(bounds%begc:bounds%endc)       ! subsurface runoff - topographic control (mm/s)
      real(r8) :: fff(bounds%begc:bounds%endc)            ! decay factor (m-1)
      real(r8) :: xsi(bounds%begc:bounds%endc)            ! excess soil water above saturation at layer i (mm)
@@ -1168,7 +1166,6 @@ contains
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
           qflx_drain(c)    = 0._r8 
-          rsub_bot(c)      = 0._r8
           qflx_rsub_sat(c) = 0._r8
           rsub_top(c)      = 0._r8
           fracice_rsub(c)  = 0._r8
@@ -2107,13 +2104,12 @@ contains
      type(waterflux_type)     , intent(inout) :: waterflux_inst
      !
      ! !LOCAL VARIABLES:
-     character(len=32) :: subname = 'Drainage'           ! subroutine name
+     character(len=32) :: subname = 'LateralFlowPowerLaw' ! subroutine name
      integer  :: c,j,fc,i                                ! indices
      real(r8) :: dtime                                   ! land model time step (sec)
      real(r8) :: xs(bounds%begc:bounds%endc)             ! water needed to bring soil moisture to watmin (mm)
      real(r8) :: dzmm(bounds%begc:bounds%endc,1:nlevsoi) ! layer thickness (mm)
      integer  :: jwt(bounds%begc:bounds%endc)            ! index of the soil layer right above the water table (-)
-     real(r8) :: rsub_bot(bounds%begc:bounds%endc)       ! subsurface runoff - bottom drainage (mm/s)
      real(r8) :: rsub_top(bounds%begc:bounds%endc)       ! subsurface runoff - topographic control (mm/s)
      real(r8) :: fff(bounds%begc:bounds%endc)            ! decay factor (m-1)
      real(r8) :: xsi(bounds%begc:bounds%endc)            ! excess soil water above saturation at layer i (mm)
@@ -2212,7 +2208,6 @@ contains
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
           qflx_drain(c)    = 0._r8 
-          rsub_bot(c)      = 0._r8
           qflx_rsub_sat(c) = 0._r8
           rsub_top(c)      = 0._r8
           fracice_rsub(c)  = 0._r8
