@@ -47,6 +47,7 @@ module clm_instMod
   use InfiltrationExcessRunoffMod     , only : infiltration_excess_runoff_type
   use IrrigationMod                   , only : irrigation_type
   use LakeStateType                   , only : lakestate_type
+  use LateralOutflowMod               , only : lateral_outflow_type
   use OzoneBaseMod                    , only : ozone_base_type
   use OzoneFactoryMod                 , only : create_and_init_ozone_type
   use PhotosynthesisMod               , only : photosyns_type
@@ -100,6 +101,7 @@ module clm_instMod
   type(infiltration_excess_runoff_type)   :: infiltration_excess_runoff_inst
   type(irrigation_type)                   :: irrigation_inst
   type(lakestate_type)                    :: lakestate_inst
+  type(lateral_outflow_type)              :: lateral_outflow_inst
   class(ozone_base_type), allocatable     :: ozone_inst
   type(photosyns_type)                    :: photosyns_inst
   type(soilstate_type)                    :: soilstate_inst
@@ -310,6 +312,7 @@ contains
 
     call saturated_excess_runoff_inst%Init(bounds)
     call infiltration_excess_runoff_inst%Init(bounds)
+    call lateral_outflow_inst%Init(bounds)
 
     call solarabs_inst%Init(bounds)
 

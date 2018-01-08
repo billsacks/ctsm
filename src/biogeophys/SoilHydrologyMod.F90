@@ -20,7 +20,8 @@ module SoilHydrologyMod
   use NumericsMod       , only : truncate_small_values
   use EnergyFluxType    , only : energyflux_type
   use InfiltrationExcessRunoffMod, only : infiltration_excess_runoff_type
-  use SoilHydrologyType , only : soilhydrology_type  
+  use LateralOutflowMod , only : lateral_outflow_type
+  use SoilHydrologyType , only : soilhydrology_type
   use SoilStateType     , only : soilstate_type
   use SaturatedExcessRunoffMod, only : saturated_excess_runoff_type
   use WaterfluxType     , only : waterflux_type
@@ -2079,8 +2080,10 @@ contains
 
 !#6
    !-----------------------------------------------------------------------
+   ! FIXME(wjs, 2018-01-08) Rename to LateralFlow
    subroutine LateralFlowPowerLaw(bounds, num_hydrologyc, filter_hydrologyc, &
-        num_urbanc, filter_urbanc,soilhydrology_inst, soilstate_inst, &
+        num_urbanc, filter_urbanc, &
+        lateral_outflow_inst, soilhydrology_inst, soilstate_inst, &
         waterstate_inst, waterflux_inst)
      !
      ! !DESCRIPTION:
@@ -2099,6 +2102,7 @@ contains
      integer                  , intent(in)    :: filter_urbanc(:)     ! column filter for urban points
      integer                  , intent(in)    :: filter_hydrologyc(:) ! column filter for soil points
      type(soilstate_type)     , intent(in)    :: soilstate_inst
+     type(lateral_outflow_type), intent(inout) :: lateral_outflow_inst
      type(soilhydrology_type) , intent(inout) :: soilhydrology_inst
      type(waterstate_type)    , intent(inout) :: waterstate_inst
      type(waterflux_type)     , intent(inout) :: waterflux_inst
@@ -2111,15 +2115,11 @@ contains
      real(r8) :: dzmm(bounds%begc:bounds%endc,1:nlevsoi) ! layer thickness (mm)
      integer  :: jwt(bounds%begc:bounds%endc)            ! index of the soil layer right above the water table (-)
      real(r8) :: rsub_top(bounds%begc:bounds%endc)       ! subsurface runoff - topographic control (mm/s)
-     real(r8) :: fff(bounds%begc:bounds%endc)            ! decay factor (m-1)
      real(r8) :: xsi(bounds%begc:bounds%endc)            ! excess soil water above saturation at layer i (mm)
      real(r8) :: xsia(bounds%begc:bounds%endc)           ! available pore space at layer i (mm)
      real(r8) :: xs1(bounds%begc:bounds%endc)            ! excess soil water above saturation at layer 1 (mm)
      real(r8) :: smpfz(1:nlevsoi)                        ! matric potential of layer right above water table (mm)
      real(r8) :: wtsub                                   ! summation of hk*dzmm for layers below water table (mm**2/s)
-     real(r8) :: dzsum                                   ! summation of dzmm of layers below water table (mm)
-     real(r8) :: icefracsum                              ! summation of icefrac*dzmm of layers below water table (-)
-     real(r8) :: fracice_rsub(bounds%begc:bounds%endc)   ! fractional impermeability of soil layers (-)
      real(r8) :: available_h2osoi_liq                    ! available soil liquid water in a layer
      real(r8) :: h2osoi_vol
      real(r8) :: imped
@@ -2140,7 +2140,6 @@ contains
      real(r8) :: rel_moist                ! relative moisture, temporary variable
      real(r8) :: wtsub_vic                ! summation of hk*dzmm for layers in the third VIC layer
      integer :: g
-     real(r8), parameter :: n_baseflow = 1 !drainage power law exponent
      !-----------------------------------------------------------------------
 
      associate(                                                            & 
@@ -2198,19 +2197,14 @@ contains
              c = filter_hydrologyc(fc)
              dzmm(c,j) = dz(c,j)*1.e3_r8
 
+             ! TODO(wjs, 2018-01-02) Move this setting of icefrac to somewhere more
+             ! centralized, so it doesn't need to be redone in multiple places. Note that
+             ! it's already set in SetSoilWaterFractions; I think it may need to be
+             ! recalculated at this point in the code (because some of the inputs may
+             ! have changed by here), but maybe we can re-call SetSoilWaterFractions?
              vol_ice = min(watsat(c,j), h2osoi_ice(c,j)/(dz(c,j)*denice))
              icefrac(c,j) = min(1._r8,vol_ice/watsat(c,j))          
           end do
-       end do
-
-       ! Initial set
-
-       do fc = 1, num_hydrologyc
-          c = filter_hydrologyc(fc)
-          qflx_drain(c)    = 0._r8 
-          qflx_rsub_sat(c) = 0._r8
-          rsub_top(c)      = 0._r8
-          fracice_rsub(c)  = 0._r8
        end do
 
        ! The layer index of the first unsaturated layer, 
@@ -2228,35 +2222,32 @@ contains
           enddo
        end do
 
+       call lateral_outflow_inst%LateralOutflow(bounds, num_hydrologyc, filter_hydrologyc, &
+            col, soilhydrology_inst, &
+            jwt = jwt(bounds%begc:bounds%endc), &
+            dzmm = dzmm(bounds%begc:bounds%endc,:))
+
+       ! FIXME(wjs, 2018-01-08) Compute hillslope inflow, if use_hillslope is true; put
+       ! the following in an 'else'
+       do fc = 1, num_hydrologyc
+          c = filter_hydrologyc(fc)
+          qflx_latflow_in(c) = 0._r8
+       end do
+
+
        !-- Topographic runoff  -------------------------
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
 
-          fff(c)         = 1._r8/ hkdepth(c)
-
-          dzsum = 0._r8
-          icefracsum = 0._r8
-          do j = max(jwt(c),1), nlevsoi
-             dzsum  = dzsum + dzmm(c,j)
-             icefracsum = icefracsum + icefrac(c,j) * dzmm(c,j)
-          end do
-          imped=10._r8**(-e_ice*(icefracsum/dzsum))
-          !@@
-          ! baseflow is power law expression relative to bedrock layer
-          if(zwt(c) <= zi(c,nbedrock(c))) then 
-             rsub_top(c)    = imped * baseflow_scalar * tan(rpi/180._r8*col%topo_slope(c))* &
-                              (zi(c,nbedrock(c)) - zwt(c))**(n_baseflow)
-          else
-             rsub_top(c) = 0._r8
-          endif
+          rsub_top(c) = lateral_outflow_inst%qflx_latflow_out_col(c) - qflx_latflow_in(c)
 
           !--  Now remove water via rsub_top
           rsub_top_tot = - rsub_top(c) * dtime
-          !should never be positive... but include for completeness
+
           if(rsub_top_tot > 0.) then !rising water table
-             
-             call endrun(msg="RSUB_TOP IS POSITIVE in Drainage!"//errmsg(sourcefile, __LINE__))
-             
+             ! FIXME(wjs, 2018-01-05) Fill this in with code from the hillslope hydrology
+             ! branch
+
           else ! deepening water table
              do j = jwt(c)+1, nbedrock(c)
                 ! use analytical expression for specific yield

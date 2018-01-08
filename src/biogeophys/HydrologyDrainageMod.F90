@@ -18,6 +18,7 @@ module HydrologyDrainageMod
   use WaterstateType    , only : waterstate_type
   use IrrigationMod     , only : irrigation_type
   use GlacierSurfaceMassBalanceMod, only : glacier_smb_type
+  use LateralOutflowMod , only : lateral_outflow_type
   use TotalWaterAndHeatMod, only : ComputeWaterMassNonLake
   use LandunitType      , only : lun                
   use ColumnType        , only : col                
@@ -40,7 +41,7 @@ contains
        num_do_smb_c, filter_do_smb_c,                &
        atm2lnd_inst, glc2lnd_inst, temperature_inst, &
        soilhydrology_inst, soilstate_inst, waterstate_inst, waterflux_inst, &
-       irrigation_inst, glacier_smb_inst)
+       lateral_outflow_inst, irrigation_inst, glacier_smb_inst)
     !
     ! !DESCRIPTION:
     ! Calculates soil/snow hydrology with drainage (subsurface runoff)
@@ -72,6 +73,7 @@ contains
     type(soilstate_type)     , intent(inout) :: soilstate_inst
     type(waterstate_type)    , intent(inout) :: waterstate_inst
     type(waterflux_type)     , intent(inout) :: waterflux_inst
+    type(lateral_outflow_type), intent(inout) :: lateral_outflow_inst
     type(irrigation_type)    , intent(in)    :: irrigation_inst
     type(glacier_smb_type)   , intent(in)    :: glacier_smb_inst
     !
@@ -140,7 +142,7 @@ contains
          
          call LateralFlowPowerLaw(bounds, num_hydrologyc, filter_hydrologyc, &
               num_urbanc, filter_urbanc,&
-              soilhydrology_inst, soilstate_inst, &
+              lateral_outflow_inst, soilhydrology_inst, soilstate_inst, &
               waterstate_inst, waterflux_inst)
 
       endif

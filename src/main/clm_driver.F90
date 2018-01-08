@@ -850,7 +850,7 @@ contains
             filter(nc)%num_do_smb_c, filter(nc)%do_smb_c,     &                
             atm2lnd_inst, glc2lnd_inst, temperature_inst,     &
             soilhydrology_inst, soilstate_inst, waterstate_inst, waterflux_inst, &
-            irrigation_inst, glacier_smb_inst)
+            lateral_outflow_inst, irrigation_inst, glacier_smb_inst)
 
        call t_stopf('hydro2_drainage')     
 
