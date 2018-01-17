@@ -54,7 +54,7 @@ module LateralOutflowMod
      procedure, private :: InitHistory
      procedure, private :: InitCold
 
-     procedure, private, nopass :: ComputeLateralOutflowPowerLaw
+     procedure, private :: ComputeLateralOutflowPowerLaw
      procedure, private, nopass :: ConvertLatflowOutToVolume      ! simple method to convert a latflow output flux to a volume
   end type lateral_outflow_type
 
@@ -166,7 +166,7 @@ contains
     this%baseflow_methods(METHOD_INDEX_CROP)  = BASEFLOW_METHOD_POWER_LAW
     this%baseflow_methods(METHOD_INDEX_OTHER) = BASEFLOW_METHOD_POWER_LAW
 
-    transmissivity_method = TRANSMISSIVITY_METHOD_LAYERSUM
+    this%transmissivity_method = TRANSMISSIVITY_METHOD_LAYERSUM
 
   end subroutine InitCold
 
@@ -204,7 +204,7 @@ contains
 
     associate( &
          qflx_latflow_out     => this%qflx_latflow_out_col     , & ! Output: [real(r8) (:) ] lateral flow output (mm/s)
-         qflx_latflow_out_vol => this%qflx_latflow_out_vol_col , & ! Output: [real(r8) (:) ] lateral flow output volume (m^3/s)
+         qflx_latflow_out_vol => this%qflx_latflow_out_vol_col   & ! Output: [real(r8) (:) ] lateral flow output volume (m^3/s)
          )
 
     ! FIXME(wjs, 2018-01-03) divide the filter into two sub-filters based on whether
@@ -254,14 +254,15 @@ contains
   end subroutine LateralOutflow
 
   !-----------------------------------------------------------------------
-  subroutine ComputeLateralOutflowPowerLaw(bounds, num_c, filter_c, &
-       col, grc, soilhydrology_inst, jwt, dzmm, &
+  subroutine ComputeLateralOutflowPowerLaw(this, bounds, num_c, filter_c, &
+       col, grc, soilhydrology_inst, jwt, dzmm, baseflow_scalar, &
        qflx_latflow_out, qflx_latflow_out_vol)
     !
     ! !DESCRIPTION:
     ! Compute lateral outflow using a power law method
     !
     ! !ARGUMENTS:
+    class(lateral_outflow_type), intent(in) :: this
     type(bounds_type)        , intent(in) :: bounds               
     integer                  , intent(in) :: num_c       ! number of column points in column filter
     integer                  , intent(in) :: filter_c(:) ! column filter
@@ -283,6 +284,7 @@ contains
 
     real(r8) :: dzsum           ! summation of dzmm of layers below water table (mm)
     real(r8) :: icefracsum      ! summation of icefrac*dzmm of layers below water table (-)
+    real(r8) :: imped
 
     real(r8), parameter :: n_baseflow = 1 !drainage power law exponent
 

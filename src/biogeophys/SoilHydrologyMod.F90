@@ -2114,6 +2114,7 @@ contains
      real(r8) :: xs(bounds%begc:bounds%endc)             ! water needed to bring soil moisture to watmin (mm)
      real(r8) :: dzmm(bounds%begc:bounds%endc,1:nlevsoi) ! layer thickness (mm)
      integer  :: jwt(bounds%begc:bounds%endc)            ! index of the soil layer right above the water table (-)
+     real(r8) :: qflx_latflow_in(bounds%begc:bounds%endc) ! lateral flow input into each column
      real(r8) :: rsub_top(bounds%begc:bounds%endc)       ! subsurface runoff - topographic control (mm/s)
      real(r8) :: xsi(bounds%begc:bounds%endc)            ! excess soil water above saturation at layer i (mm)
      real(r8) :: xsia(bounds%begc:bounds%endc)           ! available pore space at layer i (mm)
@@ -2122,7 +2123,6 @@ contains
      real(r8) :: wtsub                                   ! summation of hk*dzmm for layers below water table (mm**2/s)
      real(r8) :: available_h2osoi_liq                    ! available soil liquid water in a layer
      real(r8) :: h2osoi_vol
-     real(r8) :: imped
      real(r8) :: rsub_top_tot
      real(r8) :: rsub_top_layer
      real(r8) :: theta_unsat
@@ -2223,7 +2223,7 @@ contains
        end do
 
        call lateral_outflow_inst%LateralOutflow(bounds, num_hydrologyc, filter_hydrologyc, &
-            col, soilhydrology_inst, &
+            col, grc, soilhydrology_inst, &
             jwt = jwt(bounds%begc:bounds%endc), &
             dzmm = dzmm(bounds%begc:bounds%endc,:))
 
