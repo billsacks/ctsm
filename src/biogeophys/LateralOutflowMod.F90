@@ -6,17 +6,19 @@ module LateralOutflowMod
   !
   ! !USES:
 #include "shr_assert.h"
-  use shr_kind_mod , only : r8 => shr_kind_r8
-  use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-  use shr_log_mod  , only : errMsg => shr_log_errMsg
-  use decompMod    , only : bounds_type
-  use abortutils   , only : endrun
-  use clm_varctl   , only : iulog
-  use clm_varcon   , only : e_ice, rpi
-  use clm_varpar   , only : nlevsoi
-  use ColumnType   , only : column_type
-  use GridcellType , only : gridcell_type
-  use SoilHydrologyType, only : soilhydrology_type
+  use shr_kind_mod      , only : r8 => shr_kind_r8
+  use shr_infnan_mod    , only : nan => shr_infnan_nan, assignment(=)
+  use shr_log_mod       , only : errMsg => shr_log_errMsg
+  use decompMod         , only : bounds_type
+  use abortutils        , only : endrun
+  use clm_varctl        , only : iulog
+  use clm_varcon        , only : e_ice, rpi
+  use clm_varpar        , only : nlevsoi
+  use landunit_varcon   , only : istsoil, istcrop
+  use ColumnType        , only : column_type
+  use GridcellType      , only : gridcell_type
+  use filterColMod      , only : filter_col_type, col_filter_divide_using_ltypes
+  use SoilHydrologyType , only : soilhydrology_type
 
   implicit none
   save
@@ -29,6 +31,8 @@ module LateralOutflowMod
   integer, parameter :: METHOD_INDEX_CROP  = 2
   integer, parameter :: METHOD_INDEX_OTHER = 3
   integer, parameter :: NUM_METHODS = 3
+  ! Landunit types corresponding to methods 1..(n-1)
+  integer, parameter :: METHOD_LTYPES(NUM_METHODS-1) = [istsoil, istcrop]
 
   ! !PUBLIC TYPES:
 
@@ -63,6 +67,8 @@ module LateralOutflowMod
   ! !PRIVATE DATA MEMBERS:
 
   integer, parameter :: BASEFLOW_METHOD_POWER_LAW = 1
+  integer, parameter :: BASEFLOW_METHOD_KINEMATIC = 2
+  integer, parameter :: BASEFLOW_METHOD_DARCY     = 3
 
   integer, parameter :: TRANSMISSIVITY_METHOD_LAYERSUM = 1
   integer, parameter :: TRANSMISSIVITY_METHOD_CONSTANT = 2
@@ -262,6 +268,8 @@ contains
     real(r8)                 , intent(in) :: dzmm( bounds%begc: , 1: ) ! layer thickness (mm)
     !
     ! !LOCAL VARIABLES:
+    type(filter_col_type) :: filters(NUM_METHODS)
+    integer :: method_index
 
     character(len=*), parameter :: subname = 'LateralOutflow'
     !-----------------------------------------------------------------------
@@ -274,47 +282,35 @@ contains
          qflx_latflow_out_vol => this%qflx_latflow_out_vol_col   & ! Output: [real(r8) (:) ] lateral flow output volume (m^3/s)
          )
 
-    ! FIXME(wjs, 2018-01-03) divide the filter into two sub-filters based on whether
-    ! istsoil is true
-    !
-    ! To do this, introduce a new routine into filterColMod: col_filter_divide_using_ltype.
-    ! This will be a cross between col_filter_from_ltypes and
-    ! col_filter_from_filter_and_logical_array; it will accept an existing filter and an
-    ! integer giving ltype; it will return TWO filters whose union is the original filter.
-    !
-    ! Update (based on input from the ctsm meeting 2018-01-04): Actually, do three: one
-    ! for istsoil, one for istcrop, and one for everything else. To do this, I think I
-    ! should have a routine that divides an existing filter by landunit types: its inputs
-    ! are an existing filter and an array of integers giving ltypes; its output is an
-    ! array of filters (n+1 filters, where n is the number of ltypes): filter 1 applies
-    ! over ltype 1, filter 2 applies over ltype 2... filter n+1 applies over
-    ! non-specified ltypes.
-    !
-    !   Then in this routine, I'll have an array of filters. I'll have parameters saying
-    !   which index of this array of filters is what. e.g., filter_istsoil = 1,
-    !   filter_istcrop = 2, filter_other = 3.
-    !
-    !   The implementation of the filter-creator can have, at the beginning, a creation
-    !   of an array mapping ltypes to the appropriate index in the output array. e.g.,
-    !
-    !     do i = 1, max_lunit
-    !       filter_num(i) = [whatever code is needed to determine the right filter number
-    !       for this landunit]
-    !     end do
-    !
-    !     Then loop over the original filter, assigning points to the correct output
-    !     filter.
+    call col_filter_divide_using_ltypes(&
+         bounds = bounds, &
+         num_orig = num_hydrologyc, &
+         filter_orig = filter_hydrologyc, &
+         ltypes = METHOD_LTYPES, &
+         filters = filters)
 
-    ! FIXME(wjs, 2018-01-04) Then have a select case for each sub-filter, with the
-    ! appropriate namelist item.
-
-    call this%ComputeLateralOutflowPowerLaw(bounds, num_hydrologyc, filter_hydrologyc, &
-         col, grc, soilhydrology_inst, &
-         jwt = jwt(bounds%begc:bounds%endc), &
-         dzmm = dzmm(bounds%begc:bounds%endc,:), &
-         baseflow_scalar = this%baseflow_scalar, &
-         qflx_latflow_out = qflx_latflow_out(bounds%begc:bounds%endc), &
-         qflx_latflow_out_vol = qflx_latflow_out_vol(bounds%begc:bounds%endc))
+    do method_index = 1, NUM_METHODS
+       select case (this%baseflow_methods(method_index))
+       case (BASEFLOW_METHOD_POWER_LAW)
+          call this%ComputeLateralOutflowPowerLaw(&
+               bounds = bounds, &
+               num_c = filters(method_index)%num, &
+               filter_c = filters(method_index)%indices, &
+               col = col, &
+               grc = grc, &
+               soilhydrology_inst = soilhydrology_inst, &
+               jwt = jwt(bounds%begc:bounds%endc), &
+               dzmm = dzmm(bounds%begc:bounds%endc,:), &
+               baseflow_scalar = this%baseflow_scalar, &
+               qflx_latflow_out = qflx_latflow_out(bounds%begc:bounds%endc), &
+               qflx_latflow_out_vol = qflx_latflow_out_vol(bounds%begc:bounds%endc))
+       case default
+          write(iulog,*) subname//' ERROR: Unrecognized baseflow method'
+          write(iulog,*) 'method_index, baseflow_methods(method_index) = ', &
+               method_index, this%baseflow_methods(method_index)
+          call endrun(subname//' ERROR: Unrecognized baseflow method')
+       end select
+    end do
 
     end associate
 
