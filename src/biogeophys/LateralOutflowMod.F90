@@ -168,6 +168,9 @@ contains
 
     this%transmissivity_method = TRANSMISSIVITY_METHOD_LAYERSUM
 
+    ! TODO(wjs, 2018-01-18) Read from namelist
+    this%baseflow_scalar = 1.e-2_r8
+
   end subroutine InitCold
 
   ! ========================================================================
