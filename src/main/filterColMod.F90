@@ -13,13 +13,14 @@ module filterColMod
   !
   ! !USES:
 #include "shr_assert.h"
-  use shr_log_mod  , only : errMsg => shr_log_errMsg
-  use decompMod    , only : bounds_type
-  use GridcellType , only : grc
-  use LandunitType , only : lun
-  use ColumnType   , only : col
-  use clm_varcon   , only : ispval
-  use clm_varctl   , only : iulog
+  use shr_log_mod     , only : errMsg => shr_log_errMsg
+  use decompMod       , only : bounds_type
+  use GridcellType    , only : grc
+  use LandunitType    , only : lun
+  use ColumnType      , only : col
+  use clm_varcon      , only : ispval
+  use clm_varctl      , only : iulog
+  use landunit_varcon , only : max_lunit
 
   ! !PUBLIC TYPES:
   implicit none
@@ -60,6 +61,9 @@ module filterColMod
 
   ! Create a filter from another filter subset by a column-level logical array
   public :: col_filter_from_filter_and_logical_array
+
+  ! Given one col filter, divide it based on landunit types
+  public :: col_filter_divide_using_ltypes
 
   ! !PRIVATE ROUTINES:
 
@@ -364,6 +368,71 @@ contains
     end do
 
   end function col_filter_from_filter_and_logical_array
+
+  !-----------------------------------------------------------------------
+  subroutine col_filter_divide_using_ltypes(bounds, num_orig, filter_orig, ltypes, &
+       filters)
+    !
+    ! !DESCRIPTION:
+    ! Given one col filter, divide it based on landunit types
+    !
+    ! The inputs to this routine are:
+    !
+    ! - num and indices giving the original filter
+    !
+    ! - an array of landunit types
+    !
+    ! The output is an array of col filters, whose size is one greater than the size of
+    ! ltypes. For i = 1, size(ltypes), filter(i) will be a subset of the original filter
+    ! just over the landunit type given by ltypes(i); filter(size(ltypes)+1) gives the
+    ! subset of the original filter over all other landunits.
+    !
+    ! !ARGUMENTS:
+
+    ! Accepts separate num & indices arguments rather than a filter of filter_col_type so
+    ! that this function can be called with old-style filters, where these were stored
+    ! separately rather than being bundled together.
+    type(bounds_type), intent(in) :: bounds
+    integer, intent(in) :: num_orig                  ! number of points in original filter
+    integer, intent(in) :: filter_orig(:)            ! column indices in original filter
+    integer, intent(in) :: ltypes(:)                 ! landunit types
+
+    type(filter_col_type), intent(out) :: filters(:) ! divided filters; size should be size(ltypes)+1
+    !
+    ! !LOCAL VARIABLES:
+    integer :: num_types
+    integer :: num_filters
+    integer :: ltype
+    integer :: filter_for_lunit(max_lunit)  ! for each landunit, which filter will contain this landunit
+    integer :: filter_num
+    integer :: fc, c, l, i
+
+    character(len=*), parameter :: subname = 'col_filter_divide_using_ltypes'
+    !-----------------------------------------------------------------------
+
+    num_types = size(ltypes)
+    num_filters = num_types + 1
+    SHR_ASSERT((size(filters) == num_filters), errMsg(sourcefile, __LINE__))
+
+    do i = 1, num_filters
+       filters(i) = col_filter_empty(bounds)
+    end do
+
+    filter_for_lunit(:) = num_types + 1
+    do i = 1, num_types
+       filter_for_lunit(ltypes(i)) = i
+    end do
+
+    do fc = 1, num_orig
+       c = filter_orig(fc)
+       l = col%landunit(c)
+       ltype = lun%itype(l)
+       filter_num = filter_for_lunit(ltype)
+       filters(filter_num)%num = filters(filter_num)%num + 1
+       filters(filter_num)%indices(filters(filter_num)%num) = c
+    end do
+
+  end subroutine col_filter_divide_using_ltypes
 
 
   !-----------------------------------------------------------------------

@@ -18,6 +18,7 @@ module test_filter_col
    contains
      procedure :: setUp
      procedure :: tearDown
+     procedure :: create_grid
   end type TestFilterCol
 
   real(r8), parameter :: tol = 1.e-13_r8
@@ -36,6 +37,38 @@ contains
     end if
   end subroutine tearDown
 
+  subroutine create_grid(this, ngridcells, ltypes, ncols)
+    ! Create a grid containing ngridcells gridcells. Each contains the landunits given by
+    ! ltypes, each with ncols columns. Columns each have equal weight in the landunit; all
+    ! columns have col type 1.
+
+    class(TestFilterCol), intent(in) :: this
+    integer, intent(in) :: ngridcells ! number of gridcells
+    integer, intent(in) :: ltypes(:)  ! landunit types in each gridcell
+    integer, intent(in) :: ncols      ! number of cols per landunit
+
+    integer :: gi, li
+    integer :: ctypes(ncols)
+    real(r8) :: cweights(ncols)
+    integer :: nlunits
+    real(r8) :: lweight
+
+    nlunits = size(ltypes)
+    lweight = 1._r8 / real(nlunits, r8)
+    ctypes(:) = 1
+    cweights(:) = 1._r8 / real(ncols, r8)
+
+    call unittest_subgrid_setup_start()
+    do gi = 1, ngridcells
+       call unittest_add_gridcell()
+       do li = 1, nlunits
+          call create_landunit_ncols(ltype = ltypes(li), lweight = lweight, &
+               ctypes = ctypes, cweights = cweights)
+       end do
+    end do
+    call unittest_subgrid_setup_end()
+  end subroutine create_grid
+       
   ! ------------------------------------------------------------------------
   ! Tests of equals method
   ! ------------------------------------------------------------------------
@@ -472,5 +505,101 @@ contains
 
     @assertTrue(filter_new == expected)
   end subroutine filterAndLogicalArray_multiple_points
+
+  ! ------------------------------------------------------------------------
+  ! Tests of col_filter_divide_using_ltypes
+  ! ------------------------------------------------------------------------
+
+  @Test
+  subroutine divideUsingLtypes_emptyList(this)
+    ! Test col_filter_divide_using_ltypes with an empty list of ltypes
+    class(TestFilterCol), intent(inout) :: this
+    integer :: orig_indices(6)
+    type(filter_col_type) :: filter_orig
+    type(filter_col_type) :: expected
+    type(filter_col_type) :: filters(1)
+    integer, allocatable :: ltypes(:)
+    integer :: i
+
+    call this%create_grid(ngridcells=2, ltypes = [1,2,3], ncols=2)
+    ! The original filter contains the first col from each landunit
+    orig_indices = [(bounds%begc + i, i = 0, 10, 2)]
+    filter_orig = col_filter_from_index_array(bounds, orig_indices)
+    expected = filter_orig
+    allocate(ltypes(0))
+
+    call col_filter_divide_using_ltypes(&
+         bounds = bounds, &
+         num_orig = filter_orig%num, &
+         filter_orig = filter_orig%indices, &
+         ltypes = ltypes, &
+         filters = filters)
+
+    @assertTrue(filters(1) == expected)
+  end subroutine divideUsingLtypes_emptyList
+
+  @Test
+  subroutine divideUsingLtypes_oneLtype(this)
+    ! Test col_filter_divide_using_ltypes with one ltype
+    class(TestFilterCol), intent(inout) :: this
+    integer :: orig_indices(6)
+    type(filter_col_type) :: filter_orig
+    type(filter_col_type) :: expected_ltype2, expected_other
+    type(filter_col_type) :: filters(2)
+    integer :: i
+
+    call this%create_grid(ngridcells=2, ltypes = [1,2,3], ncols=2)
+    ! The original filter contains the first col from each landunit
+    orig_indices = [(bounds%begc + i, i = 0, 10, 2)]
+    filter_orig = col_filter_from_index_array(bounds, orig_indices)
+    expected_ltype2 = col_filter_from_index_array(bounds, &
+         [bounds%begc+2, bounds%begc+8])
+    expected_other = col_filter_from_index_array(bounds, &
+         [bounds%begc, bounds%begc+4, bounds%begc+6, bounds%begc+10])
+
+    call col_filter_divide_using_ltypes(&
+         bounds = bounds, &
+         num_orig = filter_orig%num, &
+         filter_orig = filter_orig%indices, &
+         ltypes = [2], &
+         filters = filters)
+
+    @assertTrue(filters(1) == expected_ltype2)
+    @assertTrue(filters(2) == expected_other)
+  end subroutine divideUsingLtypes_oneLtype
+
+  ! FIXME(wjs, 2018-01-18) two-element list
+  @Test
+  subroutine divideUsingLtypes_twoLtypes(this)
+    ! Test col_filter_divide_using_ltypes with two ltypes
+    class(TestFilterCol), intent(inout) :: this
+    integer :: orig_indices(6)
+    type(filter_col_type) :: filter_orig
+    type(filter_col_type) :: expected_ltype1, expected_ltype3, expected_other
+    type(filter_col_type) :: filters(3)
+    integer :: i
+
+    call this%create_grid(ngridcells=2, ltypes = [1,2,3], ncols=2)
+    ! The original filter contains the first col from each landunit
+    orig_indices = [(bounds%begc + i, i = 0, 10, 2)]
+    filter_orig = col_filter_from_index_array(bounds, orig_indices)
+    expected_ltype1 = col_filter_from_index_array(bounds, &
+         [bounds%begc, bounds%begc+6])
+    expected_ltype3 = col_filter_from_index_array(bounds, &
+         [bounds%begc+4, bounds%begc+10])
+    expected_other = col_filter_from_index_array(bounds, &
+         [bounds%begc+2, bounds%begc+8])
+
+    call col_filter_divide_using_ltypes(&
+         bounds = bounds, &
+         num_orig = filter_orig%num, &
+         filter_orig = filter_orig%indices, &
+         ltypes = [3,1], &
+         filters = filters)
+
+    @assertTrue(filters(1) == expected_ltype3)
+    @assertTrue(filters(2) == expected_ltype1)
+    @assertTrue(filters(3) == expected_other)
+  end subroutine divideUsingLtypes_twoLtypes
 
 end module test_filter_col
