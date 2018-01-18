@@ -40,7 +40,6 @@ module controlMod
   use SoilBiogeochemLittVertTranspMod  , only: som_adv_flux, max_depth_cryoturb
   use SoilBiogeochemVerticalProfileMod , only: surfprof_exp 
   use SoilBiogeochemNitrifDenitrifMod  , only: no_frozen_nitrif_denitrif, nitrifReadNML
-  use SoilHydrologyMod                 , only: soilHydReadNML
   use CNFireFactoryMod                 , only: CNFireReadNML
   use CanopyFluxesMod                  , only: CanopyFluxesReadNML
   use seq_drydep_mod                   , only: drydep_method, DD_XLND, n_drydep
@@ -459,7 +458,6 @@ contains
        call CNMRespReadNML( NLFilename )
     end if
 
-    call soilHydReadNML(   NLFilename )
     if ( use_cn ) then
        call nitrifReadNML(             NLFilename )
        call CNFireReadNML(             NLFilename )

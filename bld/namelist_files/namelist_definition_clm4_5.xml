@@ -311,7 +311,7 @@ Maximum fraction of leaf that may be wet prior to drip occuring
 </entry>
 
 <entry id="baseflow_scalar" type="real" category="clm_physics"
-       group="soilhydrology_inparm" valid_values="" >
+       group="lateraloutflow_inparm" valid_values="" >
 Scalar multiplier for base flow rate
 (ONLY used if lower_boundary_condition is not aquifer or table)
 </entry>

@@ -7,6 +7,7 @@ module LateralOutflowMod
   ! !USES:
 #include "shr_assert.h"
   use shr_kind_mod , only : r8 => shr_kind_r8
+  use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use shr_log_mod  , only : errMsg => shr_log_errMsg
   use decompMod    , only : bounds_type
   use abortutils   , only : endrun
@@ -50,6 +51,7 @@ module LateralOutflowMod
      procedure, public :: LateralOutflow ! Calculate lateral outflow
 
      ! Private routines
+     procedure, private :: ReadNamelist
      procedure, private :: InitAllocate
      procedure, private :: InitHistory
      procedure, private :: InitCold
@@ -76,7 +78,7 @@ contains
   ! ========================================================================
 
   !-----------------------------------------------------------------------
-  subroutine Init(this, bounds)
+  subroutine Init(this, bounds, NLFilename)
     !
     ! !DESCRIPTION:
     ! Initialize this lateral_outflow_type object
@@ -84,12 +86,14 @@ contains
     ! !ARGUMENTS:
     class(lateral_outflow_type), intent(inout) :: this
     type(bounds_type), intent(in) :: bounds
+    character(len=*), intent(in) :: NLFilename ! namelist filename
     !
     ! !LOCAL VARIABLES:
 
     character(len=*), parameter :: subname = 'Init'
     !-----------------------------------------------------------------------
 
+    call this%ReadNamelist(NLFilename)
     call this%InitAllocate(bounds)
     call this%InitHistory(bounds)
     call this%InitCold(bounds)
@@ -97,13 +101,83 @@ contains
   end subroutine Init
 
   !-----------------------------------------------------------------------
+  subroutine ReadNamelist(this, NLFilename)
+    !
+    ! !DESCRIPTION:
+    ! Read the lateraloutflow namelist
+    !
+    ! !USES:
+    use fileutils      , only : getavu, relavu, opnfil
+    use shr_nl_mod     , only : shr_nl_find_group_name
+    use spmdMod        , only : masterproc, mpicom
+    use shr_mpi_mod    , only : shr_mpi_bcast
+    !
+    ! !ARGUMENTS:
+    class(lateral_outflow_type), intent(inout) :: this
+    character(len=*), intent(in) :: NLFilename ! namelist filename
+    !
+    ! !LOCAL VARIABLES:
+
+    ! temporary variables corresponding to the variables read from namelist
+    real(r8) :: baseflow_scalar
+
+    integer :: ierr                 ! error code
+    integer :: unitn                ! unit for namelist file
+    character(len=*), parameter :: nmlname = 'lateraloutflow_inparm'
+
+    character(len=*), parameter :: subname = 'ReadNamelist'
+    !-----------------------------------------------------------------------
+
+    namelist /lateraloutflow_inparm/ baseflow_scalar
+
+    ! Initialize parameters to garbage defaults, forcing all to be specified explicitly in
+    ! order to get reasonable results
+    baseflow_scalar = nan
+
+    if (masterproc) then
+       unitn = getavu()
+       write(iulog,*) 'Read in '//nmlname//'  namelist'
+       call opnfil (NLFilename, unitn, 'F')
+       call shr_nl_find_group_name(unitn, nmlname, status=ierr)
+       if (ierr == 0) then
+          read(unitn, nml=lateraloutflow_inparm, iostat=ierr)
+          if (ierr /= 0) then
+             call endrun(msg="ERROR reading "//nmlname//"namelist"//errmsg(sourcefile, __LINE__))
+          end if
+       else
+          call endrun(msg="ERROR could NOT find "//nmlname//"namelist"//errmsg(sourcefile, __LINE__))
+       end if
+       call relavu( unitn )
+    end if
+
+    call shr_mpi_bcast (baseflow_scalar, mpicom)
+
+    if (masterproc) then
+       write(iulog,*) ' '
+       write(iulog,*) nmlname//' settings:'
+       write(iulog,nml=lateraloutflow_inparm)
+       write(iulog,*) ' '
+    end if
+
+    this%baseflow_scalar = baseflow_scalar
+
+    ! TODO(wjs, 2018-01-05) We'll read these from namelist. (Probably read three separate
+    ! namelist variables: baseflow_method_soil, baseflow_method_crop,
+    ! baseflow_method_other.)
+    this%baseflow_methods(METHOD_INDEX_SOIL)  = BASEFLOW_METHOD_POWER_LAW
+    this%baseflow_methods(METHOD_INDEX_CROP)  = BASEFLOW_METHOD_POWER_LAW
+    this%baseflow_methods(METHOD_INDEX_OTHER) = BASEFLOW_METHOD_POWER_LAW
+
+    this%transmissivity_method = TRANSMISSIVITY_METHOD_LAYERSUM
+
+  end subroutine ReadNamelist
+
+
+  !-----------------------------------------------------------------------
   subroutine InitAllocate(this, bounds)
     !
     ! !DESCRIPTION:
     ! Allocate memory for this lateral_outflow_type object
-    !
-    ! !USES:
-    use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     !
     ! !ARGUMENTS:
     class(lateral_outflow_type), intent(inout) :: this
@@ -159,17 +233,7 @@ contains
     character(len=*), parameter :: subname = 'InitCold'
     !-----------------------------------------------------------------------
 
-    ! TODO(wjs, 2018-01-05) We'll read these from namelist. (Probably read three separate
-    ! namelist variables: baseflow_method_soil, baseflow_method_crop,
-    ! baseflow_method_other.)
-    this%baseflow_methods(METHOD_INDEX_SOIL)  = BASEFLOW_METHOD_POWER_LAW
-    this%baseflow_methods(METHOD_INDEX_CROP)  = BASEFLOW_METHOD_POWER_LAW
-    this%baseflow_methods(METHOD_INDEX_OTHER) = BASEFLOW_METHOD_POWER_LAW
-
-    this%transmissivity_method = TRANSMISSIVITY_METHOD_LAYERSUM
-
-    ! TODO(wjs, 2018-01-18) Read from namelist
-    this%baseflow_scalar = 1.e-2_r8
+    ! Nothing to do
 
   end subroutine InitCold
 

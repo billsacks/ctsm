@@ -312,7 +312,7 @@ contains
 
     call saturated_excess_runoff_inst%Init(bounds)
     call infiltration_excess_runoff_inst%Init(bounds)
-    call lateral_outflow_inst%Init(bounds)
+    call lateral_outflow_inst%Init(bounds, NLFilename)
 
     call solarabs_inst%Init(bounds)
 

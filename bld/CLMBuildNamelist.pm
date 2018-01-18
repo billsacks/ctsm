@@ -1715,9 +1715,9 @@ sub process_namelist_inline_logic {
   setup_logic_canopy($opts,  $nl_flags, $definition, $defaults, $nl, $physv);
 
   ########################################
-  # namelist group: soilhydrology_inparm #
+  # namelist group: lateraloutflow_inparm #
   ########################################
-  setup_logic_hydrology_params($opts,  $nl_flags, $definition, $defaults, $nl, $physv);
+  setup_logic_lateraloutflow_params($opts,  $nl_flags, $definition, $defaults, $nl, $physv);
 
   #####################################
   # namelist group: irrigation_inparm #
@@ -2694,9 +2694,9 @@ sub setup_logic_supplemental_nitrogen {
 
 #-------------------------------------------------------------------------------
 
-sub setup_logic_hydrology_params {
+sub setup_logic_lateraloutflow_params {
   #
-  # Logic for hydrology parameters
+  # Logic for lateral outflow parameters
   #
   my ($opts, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
@@ -3719,7 +3719,7 @@ sub write_output_files {
                  clm_soilhydrology_inparm dynamic_subgrid cnvegcarbonstate
                  finidat_consistency_checks dynpft_consistency_checks 
                  clm_initinterp_inparm century_soilbgcdecompcascade
-                 soilhydrology_inparm luna friction_velocity mineral_nitrogen_dynamics
+                 lateraloutflow_inparm luna friction_velocity mineral_nitrogen_dynamics
                  soilwater_movement_inparm rooting_profile_inparm
                  soil_resis_inparm  bgc_shared canopyfluxes_inparm aerosol
                  clmu_inparm clm_soilstate_inparm clm_nitrogen clm_snowhydrology_inparm
