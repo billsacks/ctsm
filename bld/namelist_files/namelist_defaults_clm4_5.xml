@@ -316,10 +316,10 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 
 <!-- Default glacier behavior is:
      Mountain glaciers: single_at_atm_topo
-     Greenland - inside CISM grid but outside Greenland itself: virtual
+     Greenland - inside CISM grid but outside Greenland itself: single_at_atm_topo
      Greenland itself: virtual
      Antarctica: multiple -->
-<glacier_region_behavior>'single_at_atm_topo','virtual','virtual','multiple'</glacier_region_behavior>
+<glacier_region_behavior>'single_at_atm_topo','single_at_atm_topo','virtual','multiple'</glacier_region_behavior>
 
 <!-- Default glacier melt behavior is:
      Mountain glaciers: remains_in_place
