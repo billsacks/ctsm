@@ -1742,7 +1742,7 @@ contains
          forc_pbot            =>   atm2lnd_inst%forc_pbot_not_downscaled_grc , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
          forc_po2             =>   atm2lnd_inst%forc_po2_grc                 , & ! Input:  [real(r8) (:)   ]  O2 partial pressure (Pa)                          
          forc_pco2            =>   atm2lnd_inst%forc_pco2_grc                , & ! Input:  [real(r8) (:)   ]  CO2 partial pressure (Pa)                         
-         forc_pch4            =>   atm2lnd_inst%forc_pch4_grc                , & ! Input:  [real(r8) (:)   ]  CH4 partial pressure (Pa)                         
+         forc_pch4            =>   atm2lnd_inst%forc_pch4_grc                , & ! Output: [real(r8) (:)   ]  CH4 partial pressure (Pa)
 
          !zwt                  =>   soilhydrology_inst%zwt_col                , & ! Input:  [real(r8) (:)   ]  water table depth (m) 
          !zwt_perched          =>   soilhydrology_inst%zwt_perched_col        , & ! Input:  [real(r8) (:)   ]  perched water table depth (m)                     

@@ -569,7 +569,8 @@ contains
          ptr_gcell=this%forc_solar_grc, default='inactive')
 
     if (use_lch4) then
-       this%forc_pch4_grc(begg:endg) = spval
+       ! NOT setting to spval, because a 0 value is used as a trigger for an error-check,
+       ! and there is no need for the setting to spval for this gridcell-level field.
        call hist_addfld1d (fname='PCH4', units='Pa',  &
             avgflag='A', long_name='atmospheric partial pressure of CH4', &
             ptr_lnd=this%forc_pch4_grc)
