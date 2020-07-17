@@ -13,7 +13,6 @@ module lnd_shr_methods
   private :: field_getfldptr
 
   ! Module data
-  character(len=1024)         :: msgString
   character(len=*), parameter :: u_FILE_u = &
        __FILE__
 
@@ -38,6 +37,7 @@ contains
     character(ESMF_MAXSTR) ,pointer :: lfieldnamelist(:)
     real(r8), pointer               :: dataPtr1d(:)
     real(r8), pointer               :: dataPtr2d(:,:)
+    character(len=1024)             :: msgString
     character(len=*),parameter      :: subname='(state_diagnose)'
     ! ----------------------------------------------
 

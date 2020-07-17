@@ -40,8 +40,6 @@ module lnd_import_export
   integer                :: glc_nec = 10             ! number of glc elevation classes
   integer, parameter     :: debug = 0                ! internal debug level
 
-  character(*),parameter :: F01 = "('(lnd_import_export) ',a,i5,2x,i5,2x,d21.14)"
-  character(*),parameter :: F02 = "('(lnd_import_export) ',a,i5,2x,i5,2x,d26.19)"
   character(*),parameter :: u_FILE_u = &
        __FILE__
   character(*),parameter :: modname =  "[lnd_import_export]: "
@@ -617,7 +615,7 @@ contains
     call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
 
     if (masterproc .and. debug > 0)  then
-       write(iulog,F01)' Show me what is in the state? for  '//trim(fldname)
+       write(iulog,'(a)') subname//' Show me what is in the state? for  '//trim(fldname)
        call ESMF_StatePrint(state, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
@@ -646,7 +644,8 @@ contains
           n = g - bounds%begg + 1
           output(g) = fldptr1d(n)
           if (masterproc .and. debug > 0 .and. get_nstep() < 5) then
-             write(iulog,F02)' n, g , fldptr1d(n) '//trim(fldname)//' = ',n, g, fldptr1d(n)
+             write(iulog,'(a,i5,2x,i5,2x,d26.19)') subname//' n, g , fldptr1d(n) '//trim(fldname)//' = ', &
+                  n, g, fldptr1d(n)
           end if
        end do
     end if
@@ -655,7 +654,8 @@ contains
     if (masterproc .and. debug > 0 .and. get_nstep() < 5) then
        do g = bounds%begg,bounds%endg
           i = 1 + g - bounds%begg
-          write(iulog,F02)'import: nstep, n, '//trim(fldname)//' = ',get_nstep(),i,output(g)
+          write(iulog,'(a,i5,2x,i5,2x,d26.19)') subname//' nstep, n, '//trim(fldname)//' = ', &
+               get_nstep(), i, output(g)
        end do
     end if
 
@@ -737,7 +737,8 @@ contains
     if (masterproc .and. debug > 0 .and. get_nstep() < 5) then
        do g = bounds%begg,bounds%endg
           i = 1 + g - bounds%begg
-          write(iulog,F01)'export: nstep, n, '//trim(fldname)//' = ',get_nstep(),i,input(g)
+          write(iulog,'(a,i5,2x,i5,2x,d21.14)') subname//' nstep, n, '//trim(fldname)//' = ', &
+               get_nstep(), i, input(g)
        end do
     end if
 
@@ -806,9 +807,6 @@ contains
        if (present(fldptr1d)) then
           call ESMF_FieldGet(lfield, farrayPtr=fldptr1d, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          if (masterproc .and. debug > 0)  then
-             write(iulog,F01)' in '//trim(subname)//'fldptr1d for '//trim(fldname)//' is  '
-          end if
        else if (present(fldptr2d)) then
           call ESMF_FieldGet(lfield, farrayPtr=fldptr2d, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
