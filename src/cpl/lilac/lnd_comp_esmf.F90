@@ -28,7 +28,7 @@ module lnd_comp_esmf
   use domainMod         , only : ldomain
   use controlMod        , only : control_setNL
   use clm_varorb        , only : eccen, obliqr, lambm0, mvelpp
-  use clm_varctl        , only : clm_varctl_set, iulog, finidat
+  use clm_varctl        , only : clm_varctl_set, iulog, finidat, ndep_from_cpl
   use clm_varctl        , only : nsrStartup, nsrContinue
   use clm_varctl        , only : inst_index, inst_suffix, inst_name
   use clm_time_manager  , only : set_timemgr_init, advance_timestep
@@ -327,6 +327,10 @@ contains
 
     ! set default values for run control variables
     call clm_varctl_set(caseid_in=caseid, nsrest_in=nsrest)
+
+    ! For now, ndep is not hooked up in LILAC
+    ndep_from_cpl = .false.
+
     call ESMF_LogWrite(subname//"default values for run control variables are set...", ESMF_LOGMSG_INFO)
 
     !----------------------

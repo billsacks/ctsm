@@ -6,7 +6,7 @@ module lnd_import_export
   use shr_string_mod        , only : shr_string_listGetName, shr_string_listGetNum
   use shr_sys_mod           , only : shr_sys_abort
   use shr_const_mod         , only : SHR_CONST_TKFRZ, fillvalue=>SHR_CONST_SPVAL
-  use clm_varctl            , only : iulog, co2_ppmv, ndep_from_cpl
+  use clm_varctl            , only : iulog, co2_ppmv
   use clm_varcon            , only : rair, o2_molar_const
   use clm_time_manager      , only : get_nstep
   use clm_instMod           , only : atm2lnd_inst, lnd2atm_inst, water_inst
@@ -17,7 +17,6 @@ module lnd_import_export
   use lnd2glcMod            , only : lnd2glc_type
   use atm2lndType           , only : atm2lnd_type
   use lnd_shr_methods       , only : chkerr
-  use shr_megan_mod         , only : shr_megan_mechcomps_n  ! TODO: need to add a namelist read here (see https://github.com/ESCOMP/CTSM/issues/926)
 
   implicit none
   private ! except
@@ -30,14 +29,6 @@ module lnd_import_export
   private :: state_getfldptr
   private :: check_for_nans
 
-  ! from atm->lnd
-  integer                :: ndep_nflds               ! number  of nitrogen deposition fields from atm->lnd/ocn
-
-  ! from lnd->atm
-  integer                :: drydep_nflds             ! number of dry deposition velocity fields lnd-> atm
-  integer                :: emis_nflds               ! number of fire emission fields from lnd-> atm
-
-  integer                :: glc_nec = 10             ! number of glc elevation classes
   integer, parameter     :: debug = 0                ! internal debug level
 
   character(*),parameter :: u_FILE_u = &
@@ -81,7 +72,6 @@ contains
     real(r8)                  :: forc_snowl(bounds%begg:bounds%endg)    ! snowfxl Atm flux  mm/s
     real(r8)                  :: forc_noy(bounds%begg:bounds%endg)
     real(r8)                  :: forc_nhx(bounds%begg:bounds%endg)
-    real(r8)                  :: topo_grc(bounds%begg:bounds%endg, 0:glc_nec)
     character(len=*), parameter :: subname='(lnd_import_export:import_fields)'
 
     ! Constants to compute vapor pressure
@@ -242,19 +232,6 @@ contains
     call state_getimport(importState, 'c2l_fb_atm', 'Faxa_dstdry4', bounds, &
          output=atm2lnd_inst%forc_aer_grc(:,14), rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! call state_getimport(importState, 'c2l_fb_atm', 'Sa_methane', bounds, output=atm2lnd_inst%forc_pch4_grc, rc=rc )
-    ! if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! The lilac is sending ndep in units if kgN/m2/s - and ctsm uses units of gN/m2/sec
-    ! so the following conversion needs to happen
-    ! call state_getimport(importState, 'c2l_fb_atm', 'Faxa_nhx', bounds, output=forc_nhx, rc=rc )
-    ! if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    ! call state_getimport(importState, 'c2l_fb_atm', 'Faxa_noy', bounds, output=forc_noy, rc=rc )
-    ! if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    ! do g = begg,endg
-    !    atm2lnd_inst%forc_ndep_grc(g) = (forc_nhx(g) + forc_noy(g))*1000._r8
-    ! end do
 
     !--------------------------
     ! Set force flood back from river to 0
@@ -507,11 +484,6 @@ contains
     call state_setexport(exportState, 'l2c_fb_atm', 'Sl_z0m', bounds, &
          input=lnd2atm_inst%z0m_grc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! methanem
-    ! call state_setexport(exportState, 'l2c_fb_atm', 'Fall_methane', bounds, &
-    !    input=lnd2atm_inst%flux_ch4_grc, minus=.true., rc=rc)
-    ! if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! soil water
     ! call state_setexport(exportState, 'l2c_fb_atm', 'Sl_soilw', bounds, &
