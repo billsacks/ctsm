@@ -291,7 +291,7 @@ contains
     integer           , intent(out) :: rc
 
     ! local variables
-    integer                     :: i, g, num
+    integer                     :: g
     real(r8)                    :: array(bounds%begg:bounds%endg)
     character(len=*), parameter :: subname='(lnd_import_export:export_fields)'
     !---------------------------------------------------------------------------
@@ -391,40 +391,11 @@ contains
          input=lnd2atm_inst%z0m_grc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! soil water
-    ! call state_setexport(exportState, 'l2c_fb_atm', 'Sl_soilw', bounds, &
-    !    input=water_inst%waterlnd2atmbulk_inst%h2osoi_vol_grc(:,1), rc=rc)
-    ! if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! dry dep velocities
-    ! do num = 1, drydep_nflds
-    !    call state_setexport(exportState, 'l2c_fb_atm', 'Sl_ddvel', bounds, &
-    !       input=lnd2atm_inst%ddvel_grc(:,num), ungridded_index=num, rc=rc)
-    !    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    ! end do
-
-    ! MEGAN VOC emis fluxes
-    ! do num = 1, shr_megan_mechcomps_n
-    !    call state_setexport(exportState, 'l2c_fb_atm', 'Fall_voc', bounds, &
-    !       input=lnd2atm_inst%flxvoc_grc(:,num), minus=.true., ungridded_index=num, rc=rc)
-    !    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    ! end do
-
-    ! fire emis fluxes
-    ! do num = 1, emis_nflds
-    !    call state_setexport(exportState, 'l2c_fb_atm', 'Fall_fire', bounds, &
-    !       input=lnd2atm_inst%fireflx_grc(:,num), minus=.true., ungridded_index=num, rc=rc)
-    !    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    ! end do
-    ! if (emis_nflds > 0) then
-    !    call state_setexport(exportState, 'l2c_fb_atm', 'Sl_fztopo', bounds, input=lnd2atm_inst%fireztop_grc, rc=rc)
-    !    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    ! endif
-    ! sign convention is positive downward with hierarchy of atm/glc/lnd/rof/ice/ocn.
-    ! i.e. water sent from land to rof is positive
-
     ! -----------------------
     ! output to river
+    !
+    ! sign convention is positive downward with hierarchy of atm/glc/lnd/rof/ice/ocn.
+    ! i.e. water sent from land to rof is positive
     ! -----------------------
 
     ! surface runoff is the sum of qflx_over, qflx_h2osfc_surf
