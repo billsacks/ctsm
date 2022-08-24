@@ -76,7 +76,7 @@ contains
     use fileutils           , only : getfil
     use domainMod           , only : domain_type, domain_init, domain_clean
     use clm_instur          , only : wt_lunit, topo_glc_mec, pct_urban_max
-    use landunit_varcon     , only : max_lunit, istsoil, isturb_MIN, isturb_MAX
+    use landunit_varcon     , only : max_lunit, istsoil, isturb_MIN, isturb_MAX, istwet
     use dynSubgridControlMod, only : get_flanduse_timeseries
     use dynSubgridControlMod, only : get_do_transient_lakes
     use dynSubgridControlMod, only : get_do_transient_urban
@@ -198,6 +198,24 @@ contains
     call ncd_pio_closefile(ncid)
 
     call check_sums_equal_1(wt_lunit, begg, 'wt_lunit', subname)
+
+    ! Turn wetlands into natural veg to avoid the negative runoff that sometimes comes
+    ! from wetlands.
+    !
+    ! FIXME(wjs, 2022-08-23) If we're going to keep this in the final code, we'll
+    ! probably want to move this modification to its own subroutine and only call it
+    ! conditionally (controlled by a namelist flag).
+    !
+    ! FIXME(wjs, 2022-08-23) Long-term, the best thing to do would probably be to have a
+    ! new variable for pctocean (NOT reusing wetland for this), then at runtime decide
+    ! whether to assign these ocean points to wetland or natural veg. (This would be more
+    ! self-describing on the dataset, and would prevent inadvertently replacing inland
+    ! wetlands with natural veg if we are using inland wetlands (which isn't typical).
+    ! But this can be done later; for now, probably just open an issue to do this.)
+    do n = begg, endg
+       wt_lunit(n,istsoil) = wt_lunit(n,istsoil) + wt_lunit(n,istwet)
+       wt_lunit(n,istwet) = 0._r8
+    end do
 
     ! if collapse_urban = .true.
     ! collapse urban landunits to the dominant urban landunit

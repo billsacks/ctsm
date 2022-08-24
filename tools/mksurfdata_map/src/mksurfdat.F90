@@ -738,6 +738,15 @@ program mksurfdat
           pcturb(n)        = 0._r8
           call pctnatpft(n)%set_pct_l2g(0._r8)
           call pctcft(n)%set_pct_l2g(0._r8)
+          ! FIXME(wjs, 2022-08-23) In conjunction with the change in this branch to turn
+          ! these wetland areas back into natural vegetation, we probably want to get rid
+          ! of these settings, as well as the setting of soicol above. That way, if the
+          ! soil dataset has actual data in a grid cell that the pft dataset considers to
+          ! be ocean, then we'll maintain the soil dataset's values. (And if the soil
+          ! dataset doesn't have valid data there, it looks like the code already uses
+          ! these same defaults / fill values. So I don't see a reason to have them set to
+          ! these values here.) (Note that this change should be made in the new
+          ! mksurfdata_esmf.)
           pctsand(n,:)     = 43._r8
           pctclay(n,:)     = 18._r8
           organic(n,:)   = 0._r8
