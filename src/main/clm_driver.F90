@@ -846,6 +846,7 @@ contains
        call HydrologyDrainage(bounds_clump,                   &
             filter(nc)%num_nolakec, filter(nc)%nolakec,       &
             filter(nc)%num_hydrologyc, filter(nc)%hydrologyc, &
+            filter(nc)%num_hillslopec, filter(nc)%hillslopec, &
             filter(nc)%num_urbanc, filter(nc)%urbanc,         &                 
             filter(nc)%num_do_smb_c, filter(nc)%do_smb_c,     &                
             atm2lnd_inst, glc2lnd_inst, temperature_inst,     &

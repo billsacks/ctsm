@@ -234,6 +234,15 @@ module clm_varctl
   character(len=16), public :: soil_layerstruct = '10SL_3.5m'
 
   !----------------------------------------------------------
+  ! hillslope hydrology switch
+  !----------------------------------------------------------
+
+  ! Currently just a place-holder: hillslopes not yet implemented here. Once the
+  ! hillslope branch is merged, we'll need to remove the 'parameter' attribute so this
+  ! can be set via namelist.
+  logical, public, parameter :: use_hillslope = .false. ! true => use multi-column hillslope hydrology
+
+  !----------------------------------------------------------
   ! plant hydraulic stress switch
   !----------------------------------------------------------
 

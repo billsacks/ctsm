@@ -37,6 +37,7 @@ contains
   subroutine HydrologyDrainage(bounds,               &
        num_nolakec, filter_nolakec,                  &
        num_hydrologyc, filter_hydrologyc,            &
+       num_hillslopec, filter_hillslopec,            &
        num_urbanc, filter_urbanc,                    &
        num_do_smb_c, filter_do_smb_c,                &
        atm2lnd_inst, glc2lnd_inst, temperature_inst, &
@@ -62,6 +63,8 @@ contains
     integer                  , intent(in)    :: filter_nolakec(:)    ! column filter for non-lake points
     integer                  , intent(in)    :: num_hydrologyc       ! number of column soil points in column filter
     integer                  , intent(in)    :: filter_hydrologyc(:) ! column filter for soil points
+    integer                  , intent(in)    :: num_hillslopec       ! number of hillslope soil cols
+    integer                  , intent(in)    :: filter_hillslopec(:) ! column filter for designating all hillslope cols
     integer                  , intent(in)    :: num_urbanc           ! number of column urban points in column filter
     integer                  , intent(in)    :: filter_urbanc(:)     ! column filter for urban points
     integer                  , intent(in)    :: num_do_smb_c         ! number of columns in which SMB is calculated, in column filter    
@@ -141,6 +144,7 @@ contains
 
          
          call LateralFlowPowerLaw(bounds, num_hydrologyc, filter_hydrologyc, &
+              num_hillslopec, filter_hillslopec, &
               num_urbanc, filter_urbanc,&
               lateral_outflow_inst, soilhydrology_inst, soilstate_inst, &
               waterstate_inst, waterflux_inst)
