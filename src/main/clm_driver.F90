@@ -19,7 +19,7 @@ module clm_driver
   use clm_time_manager       , only : get_prev_date, is_first_step
   use clm_varpar             , only : nlevsno, nlevgrnd
   use clm_varorb             , only : obliqr
-  use spmdMod                , only : masterproc, mpicom
+  use spmdMod                , only : masterproc, mpicom, iam
   use decompMod              , only : get_proc_clumps, get_clump_bounds, get_proc_bounds, bounds_type
   use filterMod              , only : filter, filter_inactive_and_active
   use filterMod              , only : setExposedvegpFilter
@@ -166,6 +166,12 @@ contains
     !-----------------------------------------------------------------------
 
     ! Determine processor bounds and clumps for this processor
+
+     if (iam == 20) then
+          nstep = get_nstep()
+
+          write(iulog,*) 'WJS: driver loop: nstep, snocan(24) = ', nstep, water_inst%waterstatebulk_inst%snocan_patch(24)
+     end if
 
     call get_proc_bounds(bounds_proc)
     nclumps = get_proc_clumps()
