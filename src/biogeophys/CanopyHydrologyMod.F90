@@ -605,6 +605,8 @@ contains
      real(r8), intent(inout) :: trac_qflx_intercepted_snow( bounds%begp: )
      real(r8), intent(inout) :: trac_qflx_through_liq( bounds%begp: )
      real(r8), intent(inout) :: trac_qflx_intercepted_liq( bounds%begp: )
+
+     integer :: fp, p
      !
      ! !LOCAL VARIABLES:
 
@@ -648,6 +650,14 @@ contains
           bulk_val      = bulk_qflx_intercepted_snow(begp:endp), &
           tracer_source = trac_forc_snow(begp:endp), &
           tracer_val    = trac_qflx_intercepted_snow(begp:endp))
+
+     do fp = 1, num_nolakep
+      p = filter_nolakep(fp)
+      if (p == 24) then
+         write(iulog,*) 'After CalcTracer: bulk_forc_snow, bulk_qflx_intercepted_snow, trac_forc_snow, trac_qflx_intercepted_snow = ', &
+              bulk_forc_snow(p), bulk_qflx_intercepted_snow(p), trac_forc_snow(p), trac_qflx_intercepted_snow(p)
+      end if
+     end do
 
      call CalcTracerFromBulk( &
           subgrid_level = subgrid_level_patch, &
@@ -693,6 +703,7 @@ contains
      real(r8) , intent(inout) :: liqcan( bounds%begp: )                ! canopy liquid water (mm H2O)
      !
      ! !LOCAL VARIABLES:
+     real(r8) :: snocan_prev
      integer :: fp, p
 
      character(len=*), parameter :: subname = 'UpdateState_AddInterceptionToCanopy'
@@ -706,9 +717,10 @@ contains
      do fp = 1, num_soilp
         p = filter_soilp(fp)
 
+        snocan_prev = snocan(p)
         snocan(p) = max(0._r8, snocan(p) + dtime * qflx_intercepted_snow(p))
         if (snocan(p) > 0 .and. snocan(p) < 1.e-290_r8) then
-          write(iulog,*) 'WJS: tiny snocan: AddInterceptionToCanopy: p, snocan, qflx_intercepted_snow = ', p, snocan(p), qflx_intercepted_snow(p)
+          write(iulog,*) 'WJS: tiny snocan: AddInterceptionToCanopy: p, snocan, qflx_intercepted_snow, snocan_prev = ', p, snocan(p), qflx_intercepted_snow(p), snocan_prev
         end if
         liqcan(p) = max(0._r8, liqcan(p) + dtime * qflx_intercepted_liq(p))
      end do
