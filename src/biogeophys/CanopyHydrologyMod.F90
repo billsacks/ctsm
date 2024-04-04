@@ -33,6 +33,7 @@ module CanopyHydrologyMod
   use WaterTracerUtils        , only : CalcTracerFromBulk
   use ColumnType      , only : col, column_type
   use PatchType       , only : patch, patch_type
+  use NumericsMod     , only : truncate_small_values
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -853,6 +854,8 @@ contains
      !
      ! !LOCAL VARIABLES:
      integer :: fp, p
+     real(r8) :: liqcan_orig(bounds%begp:bounds%endp)  ! liqcan before state update
+     real(r8) :: snocan_orig(bounds%begp:bounds%endp)  ! snocan before state update
 
      character(len=*), parameter :: subname = 'UpdateState_RemoveCanfallFromCanopy'
      !-----------------------------------------------------------------------
@@ -865,9 +868,29 @@ contains
      do fp = 1, num_soilp
         p = filter_soilp(fp)
 
+        liqcan_orig(p) = liqcan(p)
+        snocan_orig(p) = snocan(p)
+
         liqcan(p) = liqcan(p) - dtime * qflx_liqcanfall(p)
         snocan(p) = snocan(p) - dtime * qflx_snocanfall(p)
      end do
+
+     ! If states were supposed to go to 0 but instead ended up near-0 (positive or
+     ! negative), truncate to exactly 0
+     call truncate_small_values( &
+          num_f = num_soilp, &
+          filter_f = filter_soilp, &
+          lb = bounds%begp, &
+          ub = bounds%endp, &
+          data_baseline = liqcan_orig(bounds%begp:bounds%endp), &
+          data = liqcan(bounds%begp:bounds%endp))
+     call truncate_small_values( &
+          num_f = num_soilp, &
+          filter_f = filter_soilp, &
+          lb = bounds%begp, &
+          ub = bounds%endp, &
+          data_baseline = snocan_orig(bounds%begp:bounds%endp), &
+          data = snocan(bounds%begp:bounds%endp))
 
    end subroutine UpdateState_RemoveCanfallFromCanopy
 
