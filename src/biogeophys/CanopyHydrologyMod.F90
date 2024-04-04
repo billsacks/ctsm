@@ -549,6 +549,10 @@ contains
 
            ! Canopy interception
            qflx_intercepted_snow(p) = forc_snow(p) * fpisnow
+           if (p == 24) then
+            write(iulog,*) 'qflx_intercepted_snow, forc_snow, fpisnow, elai, esai = ', &
+                 qflx_intercepted_snow(p), forc_snow(p), fpisnow, elai(p), esai(p)
+           end if
            qflx_intercepted_liq(p) = qflx_liq_above_canopy(p) * fpiliq
 
         else
@@ -704,7 +708,7 @@ contains
 
         snocan(p) = max(0._r8, snocan(p) + dtime * qflx_intercepted_snow(p))
         if (snocan(p) > 0 .and. snocan(p) < 1.e-290_r8) then
-          write(iulog,*) 'WJS: tiny snocan: AddInterceptionToCanopy: p, snocan = ', p, snocan(p)
+          write(iulog,*) 'WJS: tiny snocan: AddInterceptionToCanopy: p, snocan, qflx_intercepted_snow = ', p, snocan(p), qflx_intercepted_snow(p)
         end if
         liqcan(p) = max(0._r8, liqcan(p) + dtime * qflx_intercepted_liq(p))
      end do
