@@ -703,6 +703,9 @@ contains
         p = filter_soilp(fp)
 
         snocan(p) = max(0._r8, snocan(p) + dtime * qflx_intercepted_snow(p))
+        if (snocan(p) > 0 .and. snocan(p) < 1.e-290_r8) then
+          write(iulog,*) 'WJS: tiny snocan: AddInterceptionToCanopy: p, snocan = ', p, snocan(p)
+        end if
         liqcan(p) = max(0._r8, liqcan(p) + dtime * qflx_intercepted_liq(p))
      end do
 
@@ -873,6 +876,9 @@ contains
 
         liqcan(p) = liqcan(p) - dtime * qflx_liqcanfall(p)
         snocan(p) = snocan(p) - dtime * qflx_snocanfall(p)
+        if (snocan(p) > 0 .and. snocan(p) < 1.e-290_r8) then
+          write(iulog,*) 'WJS: tiny snocan: RemoveCanfallFromCanopy: p, snocan = ', p, snocan(p)
+        end if
      end do
 
      ! If states were supposed to go to 0 but instead ended up near-0 (positive or
@@ -1039,6 +1045,9 @@ contains
            snocan(p) = 0._r8
         else
            snocan(p) = snocan(p) - qflx_snow_unload(p) * dtime
+        end if
+        if (snocan(p) > 0 .and. snocan(p) < 1.e-290_r8) then
+          write(iulog,*) 'WJS: tiny snocan: RemoveSnowUnloading: p, snocan = ', p, snocan(p)
         end if
      end do
 

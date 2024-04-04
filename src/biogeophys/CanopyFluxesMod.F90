@@ -1607,6 +1607,9 @@ bioms:   do f = 1, fn
                ! In this case, all liqcan will evap. Take remainder from snocan
                snocan(p) = max(0._r8, &
                   snocan(p) + liqcan(p) + (qflx_tran_veg(p) - qflx_evap_veg(p)) * dtime)
+               if (snocan(p) > 0 .and. snocan(p) < 1.e-290_r8) then
+                  write(iulog,*) 'WJS: tiny snocan: update dew, if: p, snocan = ', p, snocan(p)
+               end if
             end if
             liqcan(p) = max(0._r8,liqcan(p)+(qflx_tran_veg(p)-qflx_evap_veg(p))*dtime)
 
@@ -1616,6 +1619,9 @@ bioms:   do f = 1, fn
                liqcan(p)=liqcan(p)+snocan(p)+(qflx_tran_veg(p)-qflx_evap_veg(p))*dtime
             end if
             snocan(p) = max(0._r8,snocan(p)+(qflx_tran_veg(p)-qflx_evap_veg(p))*dtime)
+            if (snocan(p) > 0 .and. snocan(p) < 1.e-290_r8) then
+               write(iulog,*) 'WJS: tiny snocan: update dew, else: p, snocan = ', p, snocan(p)
+            end if
          end if
 
       end do
