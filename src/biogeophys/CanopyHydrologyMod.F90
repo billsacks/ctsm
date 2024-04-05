@@ -34,6 +34,7 @@ module CanopyHydrologyMod
   use ColumnType      , only : col, column_type
   use PatchType       , only : patch, patch_type
   use NumericsMod     , only : truncate_small_values
+  use spmdMod, only : iam
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -232,6 +233,9 @@ contains
      ! needed for all non-lake points. So a few routines use the nolake filter to ensure
      ! that these fluxes are set correctly for all patches.
 
+     if (iam == 20) then
+      write(iulog,*) 'WJS: CanopyInterceptionAndThroughfall: ', b_waterstate_inst%snocan_patch(24)
+     end if
 
      ! Compute canopy interception and throughfall for bulk water
      !
@@ -313,6 +317,10 @@ contains
         end associate
      end do
 
+     if (iam == 20) then
+      write(iulog,*) 'WJS: After AddIntercptionToCanopy: ', b_waterstate_inst%snocan_patch(24)
+     end if
+
      ! Compute runoff from canopy due to exceeding maximum storage, for bulk
      call BulkFlux_CanopyExcess(bounds, num_soilp, filter_soilp, &
           ! Inputs
@@ -357,6 +365,10 @@ contains
         end associate
      end do
 
+     if (iam == 20) then
+      write(iulog,*) 'WJS: After RemoveCanfallFromCanopy: ', b_waterstate_inst%snocan_patch(24)
+     end if
+
      ! Compute snow unloading for bulk
      call BulkFlux_SnowUnloading(bounds, num_soilp, filter_soilp, &
           ! Inputs
@@ -395,6 +407,10 @@ contains
              snocan           = w%waterstate_inst%snocan_patch(begp:endp))
         end associate
      end do
+
+     if (iam == 20) then
+      write(iulog,*) 'WJS: After RemoveSnowUnloading: ', b_waterstate_inst%snocan_patch(24)
+     end if
 
      ! Compute summed fluxes onto ground, for bulk water and each tracer
      !
