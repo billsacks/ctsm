@@ -48,6 +48,7 @@ module CanopyFluxesMod
   use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
   use LunaMod               , only : Update_Photosynthesis_Capacity, Acc24_Climate_LUNA,Acc240_Climate_LUNA,Clear24_Climate_LUNA
   use NumericsMod           , only : truncate_small_values
+  use spmdMod, only : iam
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -642,6 +643,10 @@ contains
       ! Determine step size
 
       dtime = get_step_size_real()
+
+      if (iam == 20) then
+         write(iulog,*) 'WJS: Start of CanopyFluxes: ', snocan(24)
+      end if
 
       ! Make a local copy of the exposedvegp filter. With the current implementation,
       ! this is needed because the filter is modified in the iteration loop.
@@ -1600,6 +1605,9 @@ bioms:   do f = 1, fn
 
          ! save before updating
          snocan_baseline(p) = snocan(p)
+         if (iam == 20 .and. p == 24) then
+            write(iulog,*) 'WJS: CanopyFluxes before: ', snocan(p)
+         end if
 
          ! Update dew accumulation (kg/m2)
          if (t_veg(p) > tfrz ) then ! above freezing, update accumulation in liqcan
@@ -1624,6 +1632,9 @@ bioms:   do f = 1, fn
             end if
          end if
 
+         if (iam == 20 .and. p == 24) then
+            write(iulog,*) 'WJS: CanopyFluxes after: ', snocan(p)
+         end if
       end do
 
       ! Remove snocan that got reduced by more than a factor of rel_epsilon
@@ -1750,6 +1761,10 @@ bioms:   do f = 1, fn
          p = filterp(f)
          write(iulog,*) 'energy balance in canopy ',p,', err=',err(p)
       end do
+
+      if (iam == 20) then
+         write(iulog,*) 'WJS: End of CanopyFluxes: ', snocan(24)
+      end if
 
     end associate
 
